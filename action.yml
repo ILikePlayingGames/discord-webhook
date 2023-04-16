@@ -32,6 +32,9 @@ inputs:
   filename:
     description: 'Name of a file that will be uploaded via the webhook'
     required: false
+  split-long-content:
+    description: 'Boolean to indicate whether messages with content longer than 2000 characters should be split into multiple messages'
+    required: false
   embed-title:
     description: 'Embed title'
     required: false

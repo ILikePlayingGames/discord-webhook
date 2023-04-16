@@ -42,6 +42,7 @@ Want to know more about Discord Webhooks? Check out the [intro](https://support.
 | embed-author-name     | `false`  | Embed Author Name                                                                                                                                 |
 | embed-author-url      | `false`  | Embed Author URL                                                                                                                                  |
 | embed-author-icon-url | `false`  | Embed Author Icon URL                                                                                                                             |
+| split-long-content    | `false`  | Whether messages with content longer than 2000 characters should be split into multiple messages                                                  |
 
 ## Usage
 

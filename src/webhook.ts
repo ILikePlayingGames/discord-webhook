@@ -20,6 +20,7 @@ const ICON_URL = 'icon-url'
 const TEXT = 'text'
 const FILENAME = 'filename'
 const THREAD_ID = 'thread-id'
+const SPLIT_LONG_CONTENT = 'split-long-content'
 
 const TOP_LEVEL_WEBHOOK_KEYS = [CONTENT, USERNAME, AVATAR_URL]
 const EMBED_KEYS = [TITLE, DESCRIPTION, TIMESTAMP, COLOR, URL]
@@ -28,6 +29,7 @@ const EMBED_FOOTER_KEYS = [TEXT, ICON_URL]
 const EMBED_IMAGE_KEYS = [URL]
 const EMBED_THUMBNAIL_KEYS = [URL]
 
+const CONTENT_LIMIT = 2000
 const DESCRIPTION_LIMIT = 4096
 
 function createPayload(): Record<string, unknown> {
@@ -156,12 +158,38 @@ async function handleResponse(response: TypedResponse<unknown>): Promise<void> {
   }
 }
 
-export async function executeWebhook(): Promise<void> {
+export async function executeWebhook(
+  payload: Record<string, unknown>,
+  filename: string
+): Promise<void> {
   const client = new HttpClient()
   let webhookUrl = core.getInput(WEBHOOK_URL)
-  const filename = core.getInput(FILENAME)
   const threadId = core.getInput(THREAD_ID)
-  const payload = createPayload()
+
+  if (core.getBooleanInput(SPLIT_LONG_CONTENT)) {
+    const content = payload.content as string
+
+    if (content.length > CONTENT_LIMIT) {
+      let remainingContent
+
+      // Start from the end since recursion will cause the base case to run first.
+      if (content.length % CONTENT_LIMIT === 0) {
+        remainingContent = content.substring(0, content.length - CONTENT_LIMIT)
+      } else {
+        remainingContent = content.substring(
+          0,
+          content.length - (content.length % CONTENT_LIMIT)
+        )
+      }
+
+      payload.content = content.substring(
+        remainingContent.length,
+        content.length
+      )
+
+      await executeWebhook({content: `${remainingContent}`}, '')
+    }
+  }
 
   if (threadId !== '') {
     webhookUrl = `${webhookUrl}?thread_id=${threadId}`
@@ -189,7 +217,7 @@ export async function executeWebhook(): Promise<void> {
 async function run(): Promise<void> {
   try {
     core.info('Running discord webhook action...')
-    await executeWebhook()
+    await executeWebhook(createPayload(), core.getInput(FILENAME))
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message)
   }
